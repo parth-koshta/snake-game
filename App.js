@@ -1,15 +1,44 @@
 import React, {Component} from 'react';
-import {View, StyleSheet, TouchableOpacity} from 'react-native';
+import {View, StyleSheet, TouchableOpacity, Alert, Text} from 'react-native';
 import {SizeMetrics} from './src/Constants';
 import {GameEngine} from 'react-native-game-engine';
-import {Head, GameLoop} from './src/Components';
+import {Head, GameLoop, Food, Tail} from './src/Components';
 
 class App extends Component {
   constructor() {
     super();
     this.boardSize = SizeMetrics.GRID_SIZE * SizeMetrics.CELL_SIZE;
     this.engine = null;
+    this.state = {
+      running: true,
+      initialPos: {
+        x: 0,
+        y: 0,
+      },
+    };
   }
+
+  onEvent = e => {
+    if (e.type === 'game-over') {
+      this.setState({
+        running: false,
+      });
+      Alert.alert('Game Over');
+    }
+  };
+  startGame = () => {
+    this.setState({
+      running: true,
+      initialPos: {
+        x: 0,
+        y: 0,
+      },
+    });
+  };
+
+  randomBetween = (min, max) => {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  };
 
   render() {
     return (
@@ -28,7 +57,7 @@ class App extends Component {
           ]}
           entities={{
             head: {
-              position: [0, 0],
+              position: [this.state.initialPos.x, this.state.initialPos.y],
               xspeed: 1,
               yspeed: 0,
               nextMove: 1,
@@ -36,8 +65,19 @@ class App extends Component {
               size: SizeMetrics.CELL_SIZE,
               renderer: <Head />,
             },
+            food: {
+              position: [
+                this.randomBetween(0, SizeMetrics.GRID_SIZE - 1),
+                this.randomBetween(0, SizeMetrics.GRID_SIZE - 1),
+              ],
+              size: 20,
+              renderer: <Food />,
+            },
+            tail: { size: 20, elements: [], renderer: <Tail /> }
           }}
           systems={[GameLoop]}
+          onEvent={this.onEvent}
+          running={this.state.running}
         />
         <View
           style={{
@@ -48,7 +88,10 @@ class App extends Component {
               justifyContent: 'center',
               alignItems: 'center',
             }}>
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                this.engine.dispatch({type: 'move-up'});
+              }}>
               <View style={styles.triangle} />
             </TouchableOpacity>
           </View>
@@ -59,11 +102,17 @@ class App extends Component {
               alignItems: 'center',
               flexDirection: 'row',
             }}>
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                this.engine.dispatch({type: 'move-left'});
+              }}>
               <View style={[styles.triangle, styles.left]} />
             </TouchableOpacity>
 
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                this.engine.dispatch({type: 'move-right'});
+              }}>
               <View style={[styles.triangle, styles.right]} />
             </TouchableOpacity>
           </View>
@@ -72,10 +121,29 @@ class App extends Component {
               justifyContent: 'center',
               alignItems: 'center',
             }}>
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                this.engine.dispatch({type: 'move-down'});
+              }}>
               <View style={[styles.triangle, styles.down]} />
             </TouchableOpacity>
           </View>
+        </View>
+
+        <View
+          style={{
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          {!this.state.running && (
+            <TouchableOpacity
+              style={{
+                padding: 10,
+              }}
+              onPress={this.startGame}>
+              <Text style={{color: 'red'}}>Start Game</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -100,7 +168,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 40,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderBottomColor: 'red',
+    borderBottomColor: 'green',
     marginVertical: 10,
     marginHorizontal: 20,
   },
